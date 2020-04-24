@@ -93,7 +93,7 @@ static void bus_release(BUSDriver *busp) {
 
 #else
 /* No bus sharing, empty macros.*/
-#define bus_acquire(busp)
+#define bus_acquire(busp, config)
 #define bus_release(busp)
 
 #endif
