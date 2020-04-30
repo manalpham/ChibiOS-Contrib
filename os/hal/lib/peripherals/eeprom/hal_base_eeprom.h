@@ -1,5 +1,6 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    Eeprom interface for ChibiOS-Contrib
+        Copyright (C) 2020 E. Bernet-Rollande aeroman@alpham.eu
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -84,7 +85,7 @@ typedef ps_offset_t eeprom_offset_t;
  * @brief   @p BaseEeprom specific methods with inherited ones.
  */
 #define _base_eeprom_methods                                                \
-	_base_pers_storage_methods                                              \
+	_base_pers_storage_methods                                                \
 	_base_eeprom_methods_alone
 
 /**
@@ -98,9 +99,9 @@ struct BaseEepromVMT {
  * @brief   @p BaseEeprom specific data.
  */
 #define _base_eeprom_data                                                   \
-	_base_persistent_storage_data											\
-	/* Driver state.*/                                                      \
-	eeprom_state_t		state;												\
+	_base_persistent_storage_data											                        \
+	/* Driver state.*/                                                        \
+	eeprom_state_t		state;												                          \
 	uint32_t			page_number;
 /**
  * @extends BasePersistentStorage
@@ -126,7 +127,7 @@ typedef struct {
  * @details This special method is used to get the instance of this class
  *          object from a derived class.
  */
-#define getBaseEeprom(ip)													\
+#define getBaseEeprom(ip)													                          \
   ((BaseEeprom *)&(ip)->vmt)
 
 /**

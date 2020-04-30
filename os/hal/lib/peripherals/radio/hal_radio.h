@@ -1,5 +1,6 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    Radio interface for ChibiOS-Contrib
+        Copyright (C) 2020 E. Bernet-Rollande aeroman@alpham.eu
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -42,22 +43,29 @@
 /*===========================================================================*/
 
 /**
+ * @brief   BaseRadio packet structure
+ *          to be redefine by child.
+ */
+typedef struct radio_packet_t radio_packet_t;
+
+/**
  * @brief   BaseRadio specific methods.
  */
-#define _base_radio_methods_alone                                           \
-  /* Send data.*/                                                           \
-  msg_t (*send)(void *instance, uint8_t raddr, uint16_t n, uint8_t* txp);   \
-  /* receive data with timeout */											\
-  msg_t (*receive_timeout) (void *instance, uint16_t* np, uint8_t* rxp,     \
-		  	  	  	  	  sysinterval_t interval);   						\
-  /* receive data (polling) */												\
-  msg_t (*receive) (void *instance, uint16_t* np, uint8_t* rxp);
+#define _base_radio_methods_alone                                             \
+  msg_t (*send)(void *instance, radio_packet_t *txp);                         \
+  void  (*start_send)(void *instance, radio_packet_t *txp);                   \
+  void (*stop_send)(void *instance);                                          \
+  msg_t (*receive_timeout)(void *instance, radio_packet_t *rxp,               \
+      sysinterval_t interval);                                                \
+  void  (*start_receive_timeout) (void *instance, radio_packet_t *rxp,        \
+      sysinterval_t interval);                                                \
+  void (*stop_receive)(void *instance);
 
 /**
  * @brief   BaseRadio specific methods with inherited ones.
  */
-#define _base_radio_methods               	                                \
-  _base_object_methods                                                      \
+#define _base_radio_methods               	                                  \
+  _base_object_methods                                                        \
   _base_radio_methods_alone
 
 /**
@@ -75,12 +83,12 @@ struct BaseRadioVMT {
 #define _base_radio_data
   _base_object_data
 
+/* #TODO : */
 /**
  * @extends BaseObject
  *
  * @brief   Base stream class.
- * @details This class represents a generic blocking unbuffered sequential
- *          data stream.
+ * @details This class represent ....
  */
 typedef struct {
   /** @brief Virtual Methods Table.*/
@@ -93,12 +101,10 @@ typedef struct {
 /*===========================================================================*/
 
 /**
- * @brief   Radio send packet.
+ * @brief   Radio send packet, blocking.
  *
  * @param[in] ip        pointer to a @p BaseRadio or derived class.
- * @param[in] n         size of the packet to send.
  * @param[in] txp       pointer to the packet to send.
- * @param[in] raddr		addressee receiver address.
  *
  * @return              The operation status.
  * @retval MSG_OK       if the function succeeded.
@@ -106,16 +112,14 @@ typedef struct {
  *
  * @api
  */
-#define radioSend(ip, raddr, n, txp)										\
-				(ip)->vmt->send(ip, raddr, n, txp)
+#define radioSend(ip, txp)	          									                      \
+				(ip)->vmt->send(ip, txp)
 
 /**
- * @brief   Radio receive packet with timeout.
+ * @brief   Radio start send packet, non blocking.
  *
  * @param[in] ip        pointer to a @p BaseRadio or derived class.
- * @param[in] np        pointer to the size of the received packet.
- * @param[in] rxp       pointer to the received packet.
- * @param[in] tout		timeout in ms (if 0 -> tout = infinite)
+ * @param[in] txp       pointer to the packet to send.
  *
  * @return              The operation status.
  * @retval MSG_OK       if the function succeeded.
@@ -123,14 +127,27 @@ typedef struct {
  *
  * @api
  */
-#define radioReceiveTimeout(ip, np, rxp, tout)								\
-				(ip)->vmt->receive_timeout(ip, np, rxp, tout)
+#define radioStartSend(ip, txp)                                               \
+        (ip)->vmt->start_send(ip, txp)
 
 /**
- * @brief   Radio receive packet.
+ * @brief   Radio stop send packet.
  *
  * @param[in] ip        pointer to a @p BaseRadio or derived class.
- * @param[in] np        pointer to the size of the received packet.
+ *
+ * @return              The operation status.
+ * @retval MSG_OK       if the function succeeded.
+ * @retval MSG_RESET    if one or more errors occurred.
+ *
+ * @api
+ */
+#define radioStopSend(ip)                                                     \
+        (ip)->vmt->stop_send(ip)
+
+/**
+ * @brief   Radio receive packet, blocking.
+ *
+ * @param[in] ip        pointer to a @p BaseRadio or derived class.
  * @param[in] rxp       pointer to the received packet.
  *
  * @return              The operation status.
@@ -139,8 +156,69 @@ typedef struct {
  *
  * @api
  */
-#define radioReceive(ip, np, rxp)											\
-				(ip)->vmt->receive_timeout(ip, np, rxp, 0)
+#define radioReceive(ip, rxp)                                                 \
+        (ip)->vmt->receive_timeout(ip, rxp, TIME_INFINITE)
+
+/**
+ * @brief   Radio receive packet with timeout, blocking.
+ *
+ * @param[in] ip        pointer to a @p BaseRadio or derived class.
+ * @param[in] rxp       pointer to the received packet.
+ * @param[in] tout		  timeout in ms (if 0 -> tout = infinite)
+ *
+ * @return              The operation status.
+ * @retval MSG_OK       if the function succeeded.
+ * @retval MSG_RESET    if one or more errors occurred.
+ *
+ * @api
+ */
+#define radioReceiveTimeout(ip, rxp, tout)					    			                \
+				(ip)->vmt->receive_timeout(ip, rxp, tout)
+
+/**
+ * @brief   Radio start receive packet, non blocking.
+ *
+ * @param[in] ip        pointer to a @p BaseRadio or derived class.
+ * @param[in] rxp       pointer to the received packet.
+ *
+ * @return              The operation status.
+ * @retval MSG_OK       if the function succeeded.
+ * @retval MSG_RESET    if one or more errors occurred.
+ *
+ * @api
+ */
+#define radioStartReceive(ip, rxp)                                            \
+        (ip)->vmt->start_receive_timeout(ip, rxp, TIME_INFINITE)
+
+/**
+ * @brief   Radio start receive packet with timeout, non blocking.
+ *
+ * @param[in] ip        pointer to a @p BaseRadio or derived class.
+ * @param[in] rxp       pointer to the received packet.
+ * @param[in] tout      timeout in ms (if 0 -> tout = infinite)
+ *
+ * @return              The operation status.
+ * @retval MSG_OK       if the function succeeded.
+ * @retval MSG_RESET    if one or more errors occurred.
+ *
+ * @api
+ */
+#define radioStartReceiveTimeout(ip, rxp, tout)                               \
+        (ip)->vmt->start_receive_timeout(ip, rxp, tout)
+
+/**
+ * @brief   Radio stop receive packet.
+ *
+ * @param[in] ip        pointer to a @p BaseRadio or derived class.
+ *
+ * @return              The operation status.
+ * @retval MSG_OK       if the function succeeded.
+ * @retval MSG_RESET    if one or more errors occurred.
+ *
+ * @api
+ */
+#define radioStopReceive(ip)                                                  \
+        (ip)->vmt->stop_receive(ip)
 
 /*===========================================================================*/
 /* External declarations.                                                    */

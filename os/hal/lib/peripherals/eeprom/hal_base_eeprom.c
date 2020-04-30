@@ -1,5 +1,6 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    Eeprom interface for ChibiOS-Contrib
+        Copyright (C) 2020 E. Bernet-Rollande aeroman@alpham.eu
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

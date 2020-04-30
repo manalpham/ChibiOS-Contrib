@@ -1,5 +1,6 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    Serial eeprom interface for ChibiOS-Contrib
+        Copyright (C) 2020 E. Bernet-Rollande aeroman@alpham.eu
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -104,12 +105,12 @@
  * @brief   Type of a SEEPROM configuration structure.
  */
 typedef struct {
-  BUSDriver                 *busp;
-  const BUSConfig           *buscfg;
+  BUSDriver           *busp;
+  const BUSConfig     *buscfg;
 #if SEEPROM_HAS_WRITE_PROTECTION_LINE
-  const ioline_t			wp_line;	/* write protection line */
+  const ioline_t			wp_line;	  /* write protection line */
 #endif
-  const size_t				size;		/* memory size           */
+  const size_t				size;		    /* memory size           */
   const size_t				page_size;  /* memory page size      */
 } SEEPROMConfig;
 
@@ -121,8 +122,8 @@ typedef struct {
 /**
  * @brief   @p SEEPROMDriver specific methods with inherited ones.
  */
-#define _serial_eeprom_methods												\
-	_base_eeprom_methods													\
+#define _serial_eeprom_methods												                      \
+	_base_eeprom_methods													                            \
 	_serial_eeprom_methods_alone
 
 /**
@@ -132,7 +133,7 @@ struct SEEPROMDriverVMT {
   _serial_eeprom_methods
 };
 
-#define _serial_eeprom_data													\
+#define _serial_eeprom_data													                        \
 	_base_eeprom_data
 
 /**
