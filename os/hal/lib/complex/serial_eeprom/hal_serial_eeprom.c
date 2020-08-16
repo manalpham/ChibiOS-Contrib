@@ -83,17 +83,22 @@ static void bus_release(BUSDriver *busp) {
 
 static void bus_acquire(BUSDriver *busp, const BUSConfig *config) {
   spiAcquireBus(busp);
-  if (busp->config != config) {
-    spiStart(busp, config);
-  }
+  spiStart(busp, config);
+  spiSelect(busp);
 }
 
 static void bus_release(BUSDriver *busp) {
+  spiUnselect(busp);
   spiReleaseBus(busp);
 }
 
+#elif (SEEPROM_BUS_DRIVER == SEEPROM_BUS_DRIVER_SPI) &&                     \
+      (SEEPROM_SHARED_BUS == FALSE)
+#define bus_acquire(busp, config)     spiSelect(busp)
+#define bus_release(busp)             spiUnselect(busp)
+
 #else
-/* No bus sharing, empty macros.*/
+/* No i2c bus sharing, empty macros.*/
 #define bus_acquire(busp, config)
 #define bus_release(busp)
 
@@ -135,20 +140,20 @@ static eeprom_error_t seeprom_read(void *instance, eeprom_offset_t offset, size_
 
 	osalDbgAssert(devp->state == EEPROM_READY, "invalid state");
 
+  /* EEPROM_READ state while the operation is performed.*/
+  devp->state = EEPROM_READ;
+
 	/* Bus acquired.*/
 	bus_acquire(devp->config->busp, devp->config->buscfg);
-
-	/* EEPROM_READ state while the operation is performed.*/
-	devp->state = EEPROM_READ;
 
 	/* Actual read implementation.*/
 	err = seeprom_device_read(devp, offset, n, rp);
 
+  /* Bus released.*/
+  bus_release(devp->config->busp);
+
 	/* Ready state again.*/
 	devp->state = EEPROM_READY;
-
-	/* Bus released.*/
-	bus_release(devp->config->busp);
 
 	return err;
 }
@@ -162,20 +167,20 @@ static eeprom_error_t seeprom_read_page(void *instance, eeprom_offset_t offset, 
 
 	osalDbgAssert(devp->state == EEPROM_READY, "invalid state");
 
-	/* Bus acquired.*/
-	bus_acquire(devp->config->busp, devp->config->buscfg);
-
 	/* EEPROM_READ state while the operation is performed.*/
 	devp->state = EEPROM_READ;
+
+  /* Bus acquired.*/
+  bus_acquire(devp->config->busp, devp->config->buscfg);
 
 	/* Actual read page implementation.*/
 	err = seeprom_device_read_page(devp, offset, n, rp);
 
+  /* Bus released.*/
+  bus_release(devp->config->busp);
+
 	/* Ready state again.*/
 	devp->state = EEPROM_READY;
-
-	/* Bus released.*/
-	bus_release(devp->config->busp);
 
 	return err;
 }
@@ -189,20 +194,20 @@ static eeprom_error_t seeprom_write(void *instance, eeprom_offset_t offset, size
 
 	osalDbgAssert(devp->state == EEPROM_READY, "invalid state");
 
-	/* Bus acquired.*/
-	bus_acquire(devp->config->busp, devp->config->buscfg);
-
 	/* EEPROM_WRITE state while the operation is performed.*/
 	devp->state = EEPROM_WRITE;
+
+  /* Bus acquired.*/
+  bus_acquire(devp->config->busp, devp->config->buscfg);
 
 	/* Actual write implementation.*/
 	err = seeprom_device_write(devp, offset, n, wp);
 
+  /* Bus released.*/
+  bus_release(devp->config->busp);
+
 	/* Ready state again.*/
 	devp->state = EEPROM_READY;
-
-	/* Bus released.*/
-	bus_release(devp->config->busp);
 
 	return err;
 }
@@ -216,20 +221,20 @@ static eeprom_error_t seeprom_write_page(void *instance, eeprom_offset_t offset,
 
 	osalDbgAssert(devp->state == EEPROM_READY, "invalid state");
 
-	/* Bus acquired.*/
-	bus_acquire(devp->config->busp, devp->config->buscfg);
-
 	/* EEPROM_WRITE state while the operation is performed.*/
 	devp->state = EEPROM_WRITE;
+
+  /* Bus acquired.*/
+  bus_acquire(devp->config->busp, devp->config->buscfg);
 
 	/* Actual write page implementation.*/
 	err = seeprom_device_write_page(devp, offset, n, wp);
 
+  /* Bus released.*/
+  bus_release(devp->config->busp);
+
 	/* Ready state again.*/
 	devp->state = EEPROM_READY;
-
-	/* Bus released.*/
-	bus_release(devp->config->busp);
 
 	return err;
 }
